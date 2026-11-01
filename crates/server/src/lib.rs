@@ -26,7 +26,10 @@ pub fn router(config: Config) -> Result<Router, reqwest::Error> {
 }
 
 fn immediate(response: LocalResponse) -> Response<Body> {
-    let mut result = Response::new(Body::from(response.body));
+    let mut result = Response::new(match response.body {
+        std::borrow::Cow::Borrowed(body) => Body::from(body),
+        std::borrow::Cow::Owned(body) => Body::from(body),
+    });
     *result.status_mut() = response.status;
     *result.headers_mut() = response.headers;
     result

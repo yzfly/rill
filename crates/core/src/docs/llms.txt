@@ -1,0 +1,62 @@
+# Rill OpenAI API endpoint: {{ORIGIN}}
+
+> A transparent reverse proxy for the OpenAI API. Use {{ORIGIN}}/v1 as the OpenAI base URL with your own OpenAI API key. Requests and responses are byte-for-byte the OpenAI API; nothing else changes.
+
+## Use
+
+- Base URL: {{ORIGIN}}/v1
+- Auth: `Authorization: Bearer <your OpenAI API key>` (required on every /v1 request; the key is billed, never stored)
+- Environment: `OPENAI_BASE_URL={{ORIGIN}}/v1` plus the usual `OPENAI_API_KEY`. Official OpenAI SDKs and most tools need no code change.
+- Python: `OpenAI(base_url="{{ORIGIN}}/v1")`
+- Node.js: `new OpenAI({ baseURL: "{{ORIGIN}}/v1" })`
+- Streaming: `"stream": true` works; Server-Sent Events are forwarded as they are produced. With curl use `-N`.
+
+## Endpoints
+
+Every HTTP path under /v1/ is forwarded unchanged (method, query, headers, body). Verified:
+
+- POST {{ORIGIN}}/v1/chat/completions (plain and streaming)
+- POST {{ORIGIN}}/v1/responses (plain and streaming); GET /v1/responses/{id}
+- POST {{ORIGIN}}/v1/embeddings
+- POST {{ORIGIN}}/v1/decisions (e.g. model gpt-6-luna; predicate / choice / score questions)
+- GET  {{ORIGIN}}/v1/models
+
+Also forwarded as-is: images, audio (speech, transcriptions), files, uploads, batches, moderations, vector_stores, assistants, fine_tuning, legacy completions.
+
+Not supported: WebSocket / Realtime (`/v1/realtime`) returns 501.
+
+## Examples
+
+```bash
+curl -N {{ORIGIN}}/v1/responses \
+  -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4.1-mini","input":"Say hello","stream":true}'
+
+curl {{ORIGIN}}/v1/chat/completions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"Hello"}]}'
+
+curl {{ORIGIN}}/v1/decisions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"gpt-6-luna","input":"The mug arrived cracked, I want my money back","questions":[{"type":"predicate","name":"refund_requested","instructions":"Does the customer ask for a refund?"}]}'
+```
+
+## Errors
+
+- Errors in OpenAI's JSON shape (`{"error":{...}}` with OpenAI wording) come from OpenAI unchanged, including status, `x-request-id` and rate-limit headers. Retry on 429 / 5xx per `retry-after`.
+- From this proxy:
+  - 401 `Supply your OpenAI API key as Authorization: Bearer <key>.`: no Bearer key was sent.
+  - 404 `Use /v1/* for API requests.`: the path is not under /v1/ (check the base URL ends in /v1, without a second /v1).
+  - 405 method not allowed; 501 WebSocket not supported; 502 upstream unreachable.
+- 403 `unsupported_country_region_territory` comes from OpenAI: the caller is not in a supported region. The proxy cannot change this.
+
+## Other paths on this host
+
+- GET {{ORIGIN}}/ : this guide as a web page
+- GET {{ORIGIN}}/llms.txt : this file
+- GET {{ORIGIN}}/health : proxy liveness (`{"status":"ok","service":"rill"}`), not OpenAI status
+
+## Notes
+
+- No response cache; no logging of keys, prompts or completions by Rill. The host's infrastructure may keep its own logs.
+- Source and self-hosting (Cloudflare Workers Free or a single binary): https://github.com/yzfly/rill

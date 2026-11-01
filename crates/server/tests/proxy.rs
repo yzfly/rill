@@ -221,3 +221,32 @@ async fn bodyless_delete_is_not_sent_as_chunked() {
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.text().await.unwrap(), "{\"deleted\":true}");
 }
+
+#[tokio::test]
+async fn serves_usage_docs_for_people_and_agents() {
+    let gateway = proxy("http://127.0.0.1:1").await;
+    let client = reqwest::Client::new();
+    let page = client
+        .get(format!("{}/", gateway.origin))
+        .send()
+        .await
+        .unwrap();
+    assert!(
+        page.headers()["content-type"]
+            .to_str()
+            .unwrap()
+            .starts_with("text/html")
+    );
+    assert!(page.headers().contains_key("content-security-policy"));
+    let page = page.text().await.unwrap();
+    assert!(page.contains(&format!("{}/v1", gateway.origin)));
+    let text = client
+        .get(format!("{}/llms.txt", gateway.origin))
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    assert!(text.contains(&format!("Base URL: {}/v1", gateway.origin)));
+}

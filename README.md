@@ -90,6 +90,20 @@ curl https://api.example.com/v1/decisions \
 
 Any tool with an "OpenAI-compatible endpoint", "API Base" or "Base URL" field works the same way. Enter the URL **with** `/v1`.
 
+## Every deployment explains itself (for people and agents)
+
+Share just the URL. Each Rill instance serves its own usage guide with its real Base URL filled in:
+
+| Path | For | Content |
+| --- | --- | --- |
+| `/` | People | Web page: Base URL with copy button, 3-step setup, Python / Node.js / curl / Decisions examples, supported APIs, troubleshooting. English / 中文. |
+| `/llms.txt` | AI agents | The same guide as plain text ([llms.txt](https://llmstxt.org) convention). `/` also returns it to clients sending `Accept: text/markdown` or `text/plain`. |
+| `/health` | Monitoring | `{"status":"ok","service":"rill"}` |
+
+To hand an endpoint to an agent, tell it: *"Read `https://api.example.com/llms.txt` and use that endpoint for the OpenAI API."* Unknown paths also return a JSON 404 that points to `/llms.txt`.
+
+The page is self-contained: no external scripts, fonts or trackers, and a strict Content-Security-Policy. The host shown is taken from the request and only accepted if it looks like a plain hostname. Behind a reverse proxy, the scheme comes from `X-Forwarded-Proto`.
+
 ## Supported APIs
 
 Rill forwards every `/v1/*` path, method, query string and body byte unchanged. It does not parse or rewrite JSON, so new OpenAI endpoints and parameters work without a Rill update.
@@ -229,7 +243,7 @@ Cloud Run, Container Apps, Oracle and Render have not been individually deployed
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `404 Use /v1/* for API requests.` | The Base URL is missing `/v1`, or the client added a second `/v1`. Use exactly `https://api.example.com/v1`. |
+| `404 Use /v1/* for API requests. Usage: GET /llms.txt` | The Base URL is missing `/v1`, or the client added a second `/v1`. Use exactly `https://api.example.com/v1`. |
 | `401 Supply your OpenAI API key as Authorization: Bearer <key>.` | Returned by Rill: no Bearer key was sent. A `401` with OpenAI's wording means the key itself is wrong. |
 | `403 unsupported_country_region_territory` | Returned by OpenAI, not Rill: the caller's region is not supported. On Workers, the caller's location counts (see above). |
 | Cloudflare error `1010` | Browser Integrity Check is blocking an API client. Add a custom rule for the API hostname that skips **Browser Integrity Check** only ([docs](https://developers.cloudflare.com/waf/tools/browser-integrity-check/)). |

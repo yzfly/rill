@@ -34,7 +34,7 @@ fn worker_headers(headers: &HeaderMap) -> Result<Headers> {
 }
 
 fn immediate(response: LocalResponse) -> Result<Response> {
-    Ok(Response::ok(response.body)?
+    Ok(Response::ok(response.body.into_owned())?
         .with_status(response.status.as_u16())
         .with_headers(worker_headers(&response.headers)?))
 }

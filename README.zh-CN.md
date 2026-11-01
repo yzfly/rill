@@ -90,6 +90,20 @@ curl https://api.example.com/v1/decisions \
 
 任何带有“OpenAI 兼容接口”“API Base”“Base URL”设置项的工具都一样使用。地址要**带上** `/v1`。
 
+## 每个部署自带说明（给人看，也给 Agent 看）
+
+只需分享地址。每个 Rill 实例都自带使用说明，并自动填好自己的真实 Base URL：
+
+| 路径 | 给谁 | 内容 |
+| --- | --- | --- |
+| `/` | 人 | 网页：可一键复制的 Base URL、三步配置、Python / Node.js / curl / Decisions 示例、支持的接口、常见问题。中英文切换。 |
+| `/llms.txt` | AI Agent | 同一份说明的纯文本版（[llms.txt](https://llmstxt.org) 约定）。请求 `/` 时带 `Accept: text/markdown` 或 `text/plain` 也会返回它。 |
+| `/health` | 监控 | `{"status":"ok","service":"rill"}` |
+
+把地址交给 Agent 时，只需告诉它：*“读取 `https://api.example.com/llms.txt`，用这个地址调用 OpenAI API。”* 访问未知路径返回的 JSON 404 也会指向 `/llms.txt`。
+
+页面完全自包含：不加载外部脚本、字体或统计代码，并带严格的 Content-Security-Policy。显示的域名取自请求，只接受普通主机名格式；放在反向代理后时，协议取自 `X-Forwarded-Proto`。
+
 ## 支持的接口
 
 Rill 原样转发所有 `/v1/*` 的路径、方法、查询参数和请求体字节，不解析也不改写 JSON。OpenAI 新增的接口和参数不需要升级 Rill 就能用。
@@ -229,7 +243,7 @@ Cloud Run、Container Apps、Oracle、Render 本版未逐一部署验证。健�
 
 | 现象 | 原因与处理 |
 | --- | --- |
-| `404 Use /v1/* for API requests.` | Base URL 少了 `/v1`，或客户端又拼了一次 `/v1`。填写 `https://api.example.com/v1`。 |
+| `404 Use /v1/* for API requests. Usage: GET /llms.txt` | Base URL 少了 `/v1`，或客户端又拼了一次 `/v1`。填写 `https://api.example.com/v1`。 |
 | `401 Supply your OpenAI API key as Authorization: Bearer <key>.` | Rill 返回：请求没带 Bearer Key。如果 401 是 OpenAI 的提示文字，说明 Key 本身不对。 |
 | `403 unsupported_country_region_territory` | OpenAI 返回，不是 Rill：调用者所在地区不受支持。Workers 上以调用者所在地为准（见上文）。 |
 | Cloudflare 错误 `1010` | 浏览器完整性检查拦截了 API 客户端。为 API 子域名添加自定义规则，只跳过 **Browser Integrity Check**（[说明](https://developers.cloudflare.com/waf/tools/browser-integrity-check/)）。 |

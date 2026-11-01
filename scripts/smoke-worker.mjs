@@ -63,6 +63,12 @@ try {
   }
   assert.ok(ready, `Worker did not start\n${log}`);
   assert.equal((await fetch(`${base}/v1/models`)).status, 401);
+  const llms = await fetch(`${base}/llms.txt`);
+  assert.match(llms.headers.get('content-type'), /^text\/plain/);
+  assert.ok((await llms.text()).includes(`Base URL: ${base}/v1`));
+  const page = await fetch(`${base}/`);
+  assert.match(page.headers.get('content-type'), /^text\/html/);
+  assert.ok((await page.text()).includes(`${base}/v1`));
   const preflight = await fetch(`${base}/v1/responses`, { method: 'OPTIONS', headers: { 'Access-Control-Request-Headers': 'authorization, openai-project' } });
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers.get('access-control-allow-headers'), 'authorization, openai-project');
@@ -99,7 +105,7 @@ try {
   assert.equal(error.headers.get('retry-after'), '2');
   assert.equal(await error.text(), '{"error":{"code":"rate_limit_exceeded"}}');
   assert.equal(calls, 2);
-  console.log('WASM/workerd smoke passed: auth, CORS, payload/query/headers, incremental SSE, upstream errors.');
+  console.log('WASM/workerd smoke passed: docs, auth, CORS, payload/query/headers, incremental SSE, upstream errors.');
 } catch (error) {
   console.error(log);
   throw error;

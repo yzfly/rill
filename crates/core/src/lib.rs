@@ -1,6 +1,10 @@
 //! Transport-independent policy. Request and response bodies never enter this crate.
 use http::{HeaderMap, HeaderValue, Method, StatusCode, Uri};
+use std::borrow::Cow;
 use url::Url;
+
+const INDEX_HTML: &str = include_str!("docs/index.html");
+const LLMS_TXT: &str = include_str!("docs/llms.txt");
 
 pub const DEFAULT_UPSTREAM: &str = "https://api.openai.com";
 
@@ -43,7 +47,7 @@ impl Config {
 pub struct LocalResponse {
     pub status: StatusCode,
     pub headers: HeaderMap,
-    pub body: &'static str,
+    pub body: Cow<'static, str>,
 }
 
 pub enum Decision {
@@ -52,16 +56,25 @@ pub enum Decision {
 }
 
 pub fn prepare(config: &Config, method: &Method, uri: &Uri, headers: &HeaderMap) -> Decision {
-    if matches!(*method, Method::GET | Method::HEAD) && uri.path() == "/health" {
-        return Decision::Local(local(
-            StatusCode::OK,
-            "{\"status\":\"ok\",\"service\":\"rill\"}",
-        ));
+    if matches!(*method, Method::GET | Method::HEAD) {
+        match uri.path() {
+            "/health" => {
+                return Decision::Local(local(
+                    StatusCode::OK,
+                    "{\"status\":\"ok\",\"service\":\"rill\"}",
+                ));
+            }
+            // Self-describing deployment: people get a page, agents get plain text.
+            "/" if wants_text(headers) => return Decision::Local(docs(LLMS_TXT, uri, headers)),
+            "/" | "/index.html" => return Decision::Local(docs(INDEX_HTML, uri, headers)),
+            "/llms.txt" => return Decision::Local(docs(LLMS_TXT, uri, headers)),
+            _ => {}
+        }
     }
     let Some(target) = config.target(uri) else {
         return Decision::Local(local(
             StatusCode::NOT_FOUND,
-            "{\"error\":{\"message\":\"Use /v1/* for API requests.\",\"type\":\"invalid_request_error\"}}",
+            "{\"error\":{\"message\":\"Use /v1/* for API requests. Usage: GET /llms.txt\",\"type\":\"invalid_request_error\"}}",
         ));
     };
     if method == Method::OPTIONS {
@@ -126,10 +139,19 @@ pub fn prepare(config: &Config, method: &Method, uri: &Uri, headers: &HeaderMap)
 }
 
 pub fn local(status: StatusCode, body: &'static str) -> LocalResponse {
+    typed(
+        status,
+        "application/json; charset=utf-8",
+        Cow::Borrowed(body),
+    )
+}
+
+fn typed(status: StatusCode, content_type: &'static str, body: Cow<'static, str>) -> LocalResponse {
     let mut headers = HeaderMap::new();
+    headers.insert("content-type", HeaderValue::from_static(content_type));
     headers.insert(
-        "content-type",
-        HeaderValue::from_static("application/json; charset=utf-8"),
+        "x-content-type-options",
+        HeaderValue::from_static("nosniff"),
     );
     response_headers_in_place(&mut headers);
     LocalResponse {
@@ -137,6 +159,86 @@ pub fn local(status: StatusCode, body: &'static str) -> LocalResponse {
         headers,
         body,
     }
+}
+
+/// `curl`/agents asking for text (and not HTML) get llms.txt at `/`.
+fn wants_text(headers: &HeaderMap) -> bool {
+    let accept = headers
+        .get("accept")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    !accept.contains("text/html")
+        && (accept.contains("text/markdown") || accept.contains("text/plain"))
+}
+
+fn docs(template: &'static str, uri: &Uri, headers: &HeaderMap) -> LocalResponse {
+    let html = template.starts_with("<!doctype");
+    let body = template.replace("{{ORIGIN}}", &public_origin(uri, headers));
+    let mut response = typed(
+        StatusCode::OK,
+        if html {
+            "text/html; charset=utf-8"
+        } else {
+            "text/plain; charset=utf-8"
+        },
+        Cow::Owned(body),
+    );
+    if html {
+        // Only the page's own inline style/script; nothing loads from elsewhere.
+        response.headers.insert(
+            "content-security-policy",
+            HeaderValue::from_static(
+                "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+            ),
+        );
+    }
+    response
+}
+
+/// The origin clients should use, as seen by this request. The host is reflected
+/// into the docs, so anything outside a plain hostname[:port] is rejected.
+pub fn public_origin(uri: &Uri, headers: &HeaderMap) -> String {
+    let host = uri
+        .authority()
+        .map(|a| a.as_str().to_owned())
+        .or_else(|| {
+            headers
+                .get("host")
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_owned)
+        })
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    let valid = !host.is_empty()
+        && host.len() <= 253
+        && host
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b':' | b'[' | b']'));
+    if !valid {
+        return "https://YOUR-RILL-HOST".into();
+    }
+    let forwarded = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| {
+            v.split(',')
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_ascii_lowercase()
+        });
+    let scheme = match (uri.scheme_str(), forwarded.as_deref()) {
+        (Some(s @ ("http" | "https")), _) => s,
+        (_, Some(s @ ("http" | "https"))) => s,
+        _ if host.starts_with("localhost")
+            || host.starts_with("127.")
+            || host.starts_with("[::1]") =>
+        {
+            "http"
+        }
+        _ => "https",
+    };
+    format!("{scheme}://{host}")
 }
 
 fn strip_hop_headers(headers: &mut HeaderMap) {
@@ -294,7 +396,7 @@ mod tests {
             Some(StatusCode::OK)
         );
         assert_eq!(
-            status(decide(Method::GET, "/", &[auth])),
+            status(decide(Method::GET, "/other", &[auth])),
             Some(StatusCode::NOT_FOUND)
         );
         assert_eq!(
@@ -325,5 +427,49 @@ mod tests {
             )),
             None
         );
+    }
+
+    fn body(decision: Decision) -> (String, String) {
+        match decision {
+            Decision::Local(r) => (
+                r.headers["content-type"].to_str().unwrap().to_owned(),
+                r.body.into_owned(),
+            ),
+            Decision::Forward { .. } => panic!("expected a local response"),
+        }
+    }
+
+    #[test]
+    fn docs_describe_this_deployment() {
+        let config = Config::new(DEFAULT_UPSTREAM).unwrap();
+        let get = |uri: &str, pairs: &[(&'static str, &'static str)]| {
+            let mut h = HeaderMap::new();
+            for (name, value) in pairs {
+                h.append(*name, HeaderValue::from_static(value));
+            }
+            body(prepare(&config, &Method::GET, &uri.parse().unwrap(), &h))
+        };
+        // Worker: absolute URI. Server: Host header, scheme from the reverse proxy.
+        let (ct, page) = get("https://api.example.com/", &[]);
+        assert!(ct.starts_with("text/html"));
+        assert!(page.contains("https://api.example.com/v1") && !page.contains("{{ORIGIN}}"));
+        let (ct, text) = get("/llms.txt", &[("host", "rill.example.org")]);
+        assert!(ct.starts_with("text/plain"));
+        assert!(text.contains("Base URL: https://rill.example.org/v1"));
+        let (_, text) = get("/llms.txt", &[("host", "localhost:8787")]);
+        assert!(text.contains("http://localhost:8787/v1"));
+        let (_, text) = get(
+            "/llms.txt",
+            &[("host", "a.example"), ("x-forwarded-proto", "http")],
+        );
+        assert!(text.contains("http://a.example/v1"));
+        // Agents asking for text at the root get llms.txt.
+        let (ct, _) = get("/", &[("host", "a.example"), ("accept", "text/markdown")]);
+        assert!(ct.starts_with("text/plain"));
+        let (ct, _) = get("/", &[("host", "a.example"), ("accept", "text/html,*/*")]);
+        assert!(ct.starts_with("text/html"));
+        // A forged Host cannot inject markup into the page.
+        let (_, page) = get("/", &[("host", "x\"><script>alert(1)</script>")]);
+        assert!(page.contains("https://YOUR-RILL-HOST/v1") && !page.contains("alert(1)"));
     }
 }

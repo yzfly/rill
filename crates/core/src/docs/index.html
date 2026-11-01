@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rill · OpenAI API endpoint</title>
+<meta name="description" content="OpenAI-compatible API endpoint. Set Base URL to {{ORIGIN}}/v1 and keep your own OpenAI API key. Chat Completions, Responses, Embeddings, Decisions and all /v1 endpoints, with streaming.">
+<link rel="icon" href="data:,">
+<link rel="alternate" type="text/plain" title="Instructions for AI agents" href="/llms.txt">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebAPI","name":"Rill OpenAI API endpoint","description":"Transparent proxy for the OpenAI API. Use {{ORIGIN}}/v1 as the OpenAI base URL with your own API key.","url":"{{ORIGIN}}/v1","documentation":"{{ORIGIN}}/llms.txt","provider":{"@type":"Organization","name":"Rill","url":"https://github.com/yzfly/rill"}}</script>
+<style>
+:root{--bg:#f7f8f6;--panel:#fff;--ink:#16201d;--muted:#5b6762;--line:#dfe4e1;--accent:#0b7a6b;--accent-ink:#fff;--code:#0f1715;--code-ink:#dce8e4;--ok:#0b7a6b;--warn:#a1600a;--no:#b23b3b}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1412;--panel:#151d1a;--ink:#e3ebe8;--muted:#93a39d;--line:#26322e;--accent:#3cc3ad;--accent-ink:#06211c;--code:#0a0f0e;--code-ink:#d3e2dd;--ok:#3cc3ad;--warn:#e0a54a;--no:#e57373}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+a{color:var(--accent)}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+.brand{font-weight:700;font-size:18px;letter-spacing:.2px;color:var(--ink);text-decoration:none}
+.brand span{color:var(--accent)}
+nav{display:flex;gap:14px;align-items:center;font-size:14px}
+nav a{text-decoration:none;color:var(--muted)}
+button{font:inherit;cursor:pointer}
+.lang{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:28px 0 12px;letter-spacing:-.5px}
+h2{font-size:22px;margin:48px 0 14px;letter-spacing:-.2px}
+.lead{color:var(--muted);font-size:18px;margin:0 0 24px;max-width:680px}
+.url{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel);border-radius:12px;overflow:hidden}
+.url .label{padding:14px 14px;color:var(--muted);font-size:13px;border-right:1px solid var(--line);white-space:nowrap;display:flex;align-items:center}
+.url code{flex:1;padding:14px;font-size:clamp(14px,2.6vw,18px);overflow-x:auto;white-space:nowrap}
+.copy{border:0;background:var(--accent);color:var(--accent-ink);padding:0 18px;font-weight:600;font-size:14px}
+.copy.small{border-radius:6px;padding:4px 10px;font-size:12px;position:absolute;top:10px;right:10px;opacity:.9}
+.facts{display:flex;flex-wrap:wrap;gap:8px 18px;margin:14px 0 0;padding:0;list-style:none;color:var(--muted);font-size:14px}
+.facts li::before{content:"✓ ";color:var(--ok)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;counter-increment:s}
+.steps li::before{content:counter(s);display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px;margin-bottom:8px}
+.steps b{display:block;margin-bottom:2px}
+.steps p{margin:0;color:var(--muted);font-size:14px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:-1px}
+.tab{border:1px solid var(--line);border-bottom:0;background:transparent;color:var(--muted);padding:8px 14px;border-radius:10px 10px 0 0;font-size:14px}
+.tab[aria-selected=true]{background:var(--code);color:var(--code-ink);border-color:var(--code)}
+.panel{position:relative}
+.panel pre{padding-top:44px}
+pre{margin:0;background:var(--code);color:var(--code-ink);padding:18px 16px;border-radius:0 12px 12px 12px;overflow-x:auto;font-size:13.5px;line-height:1.55}
+pre .c{color:#7f948d}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.api{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.api code{font-size:13px;color:var(--muted)}
+.api b{display:block}
+.tag{font-size:12px;font-weight:600;margin-left:6px}
+.tag.ok{color:var(--ok)}.tag.fw{color:var(--muted)}.tag.no{color:var(--no)}
+.agent{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:18px}
+.agent p{margin:0 0 12px}
+.agent pre{border-radius:10px;white-space:pre-wrap}
+table{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+th{background:transparent;color:var(--muted);font-weight:600;border-top:0}
+td code{font-size:12.5px;word-break:break-word}
+.notes{color:var(--muted);font-size:14px;padding-left:18px}
+.notes li{margin:6px 0}
+footer{margin:56px 0 32px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+html[lang=en] .zh,html[lang=zh-CN] .en{display:none}
+@media (max-width:680px){.steps,.grid{grid-template-columns:1fr}.url{flex-wrap:wrap}.url .label{width:100%;border-right:0;border-bottom:1px solid var(--line);padding:8px 14px}.url .copy{padding:12px 18px}th:nth-child(1),td:nth-child(1){width:42%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="brand" href="/">Rill<span>.</span></a>
+  <nav>
+    <a href="#agents"><span class="en">For agents</span><span class="zh">给 Agent</span></a>
+    <a href="/llms.txt">llms.txt</a>
+    <a href="https://github.com/yzfly/rill">GitHub</a>
+    <button class="lang" id="lang" type="button" aria-label="Switch language">中文</button>
+  </nav>
+</header>
+
+<main>
+<h1><span class="en">Use the OpenAI API through this endpoint</span><span class="zh">通过这个地址调用 OpenAI API</span></h1>
+<p class="lead"><span class="en">Keep your OpenAI API key. Change only the Base URL. Every <code>/v1</code> endpoint works unchanged, including streaming.</span><span class="zh">保留你自己的 OpenAI API Key，只改 Base URL。所有 <code>/v1</code> 接口原样可用，包括流式输出。</span></p>
+
+<div class="url">
+  <div class="label">Base URL</div>
+  <code id="base">{{ORIGIN}}/v1</code>
+  <button class="copy" type="button" data-copy="{{ORIGIN}}/v1"><span class="en">Copy</span><span class="zh">复制</span></button>
+</div>
+<ul class="facts">
+  <li><span class="en">Your key, your billing</span><span class="zh">用自己的 Key、自己付费</span></li>
+  <li><span class="en">No signup, no SDK, no client install</span><span class="zh">无需注册、无需 SDK、调用端无需安装</span></li>
+  <li><span class="en">Streaming (SSE) token by token</span><span class="zh">SSE 逐 token 流式返回</span></li>
+  <li><span class="en">No logs of keys, prompts or replies</span><span class="zh">不记录 Key、提示词或回复</span></li>
+</ul>
+
+<h2><span class="en">Three steps</span><span class="zh">三步用起来</span></h2>
+<ol class="steps">
+  <li><b><span class="en">Open your client settings</span><span class="zh">打开调用端设置</span></b><p><span class="en">Any app, SDK or agent with a "Base URL", "API Base" or "OpenAI-compatible endpoint" field.</span><span class="zh">任何带有 “Base URL”“API Base” 或 “OpenAI 兼容接口” 设置的应用、SDK 或 Agent。</span></p></li>
+  <li><b><span class="en">Paste the Base URL</span><span class="zh">填入 Base URL</span></b><p><span class="en">Exactly as shown above, ending in <code>/v1</code>.</span><span class="zh">照上面原样填写，以 <code>/v1</code> 结尾。</span></p></li>
+  <li><b><span class="en">Keep your API key</span><span class="zh">API Key 不变</span></b><p><span class="en">Sent as <code>Authorization: Bearer sk-…</code>, exactly as with OpenAI.</span><span class="zh">照常以 <code>Authorization: Bearer sk-…</code> 发送，与直连 OpenAI 相同。</span></p></li>
+</ol>
+
+<h2><span class="en">Examples</span><span class="zh">示例</span></h2>
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="env">Env</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="py">Python</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="js">Node.js</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="curl">curl</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="dec">Decisions</button>
+</div>
+<div class="panel" data-panel="env"><button class="copy small" type="button">Copy</button><pre><span class="c"># Official OpenAI SDKs and most tools read these. No code change needed.</span>
+export OPENAI_BASE_URL={{ORIGIN}}/v1
+export OPENAI_API_KEY=sk-...   <span class="c"># your own key</span></pre></div>
+<div class="panel" data-panel="py" hidden><button class="copy small" type="button">Copy</button><pre>from openai import OpenAI
+
+client = OpenAI(base_url="{{ORIGIN}}/v1")  <span class="c"># api_key from OPENAI_API_KEY</span>
+
+r = client.responses.create(model="gpt-4.1-mini", input="Hello")
+print(r.output_text)
+
+c = client.chat.completions.create(
+    model="gpt-4.1-mini",
+    messages=[{"role": "user", "content": "Hello"}],
+    stream=True,
+)
+for chunk in c:
+    print(chunk.choices[0].delta.content or "", end="")</pre></div>
+<div class="panel" data-panel="js" hidden><button class="copy small" type="button">Copy</button><pre>import OpenAI from "openai";
+
+const client = new OpenAI({ baseURL: "{{ORIGIN}}/v1" }); <span class="c">// apiKey from OPENAI_API_KEY</span>
+
+const r = await client.responses.create({ model: "gpt-4.1-mini", input: "Hello" });
+console.log(r.output_text);
+
+const e = await client.embeddings.create({ model: "text-embedding-3-small", input: "Hello" });
+console.log(e.data[0].embedding.length);</pre></div>
+<div class="panel" data-panel="curl" hidden><button class="copy small" type="button">Copy</button><pre><span class="c"># Streaming Responses API (-N disables curl's buffering)</span>
+curl -N {{ORIGIN}}/v1/responses \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4.1-mini","input":"Say hello","stream":true}'
+
+<span class="c"># Chat Completions</span>
+curl {{ORIGIN}}/v1/chat/completions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"Hello"}]}'</pre></div>
+<div class="panel" data-panel="dec" hidden><button class="copy small" type="button">Copy</button><pre><span class="c"># Decisions API: questions in, probabilities out</span>
+curl {{ORIGIN}}/v1/decisions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-6-luna","input":"The mug arrived cracked, I want my money back",
+       "questions":[{"type":"predicate","name":"refund_requested",
+                     "instructions":"Does the customer ask for a refund?"}]}'
+<span class="c"># → {"answers":[{"type":"predicate","name":"refund_requested","probability":1.0}], ...}</span></pre></div>
+
+<h2><span class="en">Supported APIs</span><span class="zh">支持的接口</span></h2>
+<div class="grid">
+  <div class="api"><b>Chat Completions<span class="tag ok">✓ SSE</span></b><code>POST /v1/chat/completions</code></div>
+  <div class="api"><b>Responses<span class="tag ok">✓ SSE</span></b><code>POST /v1/responses</code></div>
+  <div class="api"><b>Embeddings<span class="tag ok">✓</span></b><code>POST /v1/embeddings</code></div>
+  <div class="api"><b>Decisions<span class="tag ok">✓</span></b><code>POST /v1/decisions</code></div>
+  <div class="api"><b>Models<span class="tag ok">✓</span></b><code>GET /v1/models</code></div>
+  <div class="api"><b><span class="en">Everything else under /v1</span><span class="zh">其他 /v1 接口</span><span class="tag fw"><span class="en">forwarded as-is</span><span class="zh">原样转发</span></span></b><code>images · audio · files · batches · moderations · vector_stores …</code></div>
+  <div class="api"><b>Realtime (WebSocket)<span class="tag no"><span class="en">not supported</span><span class="zh">不支持</span></span></b><code>/v1/realtime</code></div>
+</div>
+
+<h2 id="agents"><span class="en">For AI agents</span><span class="zh">给 AI Agent</span></h2>
+<div class="agent">
+  <p><span class="en">Paste this into an agent's instructions, or point it at <a href="/llms.txt"><code>{{ORIGIN}}/llms.txt</code></a> (plain text, same content).</span><span class="zh">把下面这段放进 Agent 的指令里，或者让它读取 <a href="/llms.txt"><code>{{ORIGIN}}/llms.txt</code></a>（纯文本，内容相同）。</span></p>
+  <div class="panel"><button class="copy small" type="button">Copy</button><pre>Use the OpenAI API through {{ORIGIN}}/v1 instead of https://api.openai.com/v1.
+- Set the OpenAI base URL to {{ORIGIN}}/v1 (or env OPENAI_BASE_URL). Change nothing else.
+- Authenticate with the user's own key: header "Authorization: Bearer $OPENAI_API_KEY".
+- Request and response bodies are identical to the OpenAI API; streaming (SSE) works.
+- Supported: every /v1/* HTTP endpoint (chat/completions, responses, embeddings, decisions, models, ...).
+  Not supported: WebSocket / Realtime.
+- Errors with OpenAI's JSON shape come from OpenAI; a 401/404 saying "Bearer" or "/v1/*" comes from this proxy.
+- Full reference: {{ORIGIN}}/llms.txt</pre></div>
+</div>
+
+<h2><span class="en">Troubleshooting</span><span class="zh">常见问题</span></h2>
+<table>
+  <tr><th><span class="en">You see</span><span class="zh">现象</span></th><th><span class="en">Meaning and fix</span><span class="zh">原因与处理</span></th></tr>
+  <tr><td><code>404 Use /v1/* for API requests</code></td><td><span class="en">Base URL is missing <code>/v1</code>, or the client added a second <code>/v1</code>.</span><span class="zh">Base URL 少了 <code>/v1</code>，或客户端又拼了一次 <code>/v1</code>。</span></td></tr>
+  <tr><td><code>401 … Authorization: Bearer &lt;key&gt;</code></td><td><span class="en">No key was sent. A 401 in OpenAI's own wording means the key itself is wrong.</span><span class="zh">没有带 Key。若 401 是 OpenAI 的原文提示，说明 Key 本身不对。</span></td></tr>
+  <tr><td><code>403 unsupported_country_region_territory</code></td><td><span class="en">From OpenAI: the caller's location is not a <a href="https://platform.openai.com/docs/supported-countries">supported region</a>.</span><span class="zh">来自 OpenAI：调用者所在地不在<a href="https://platform.openai.com/docs/supported-countries">支持地区</a>。</span></td></tr>
+  <tr><td><span class="en">Streaming arrives all at once</span><span class="zh">流式结果一次性到达</span></td><td><span class="en">Something between you and this endpoint buffers responses. With curl, add <code>-N</code>.</span><span class="zh">中间某层在缓冲响应；curl 请加 <code>-N</code>。</span></td></tr>
+  <tr><td><code>501 unsupported_transport</code></td><td><span class="en">WebSocket / Realtime was attempted. Use the HTTP endpoints.</span><span class="zh">尝试了 WebSocket / Realtime，请改用 HTTP 接口。</span></td></tr>
+</table>
+
+<h2><span class="en">Good to know</span><span class="zh">须知</span></h2>
+<ul class="notes">
+  <li><span class="en">Requests are billed to the API key you send. This endpoint stores no keys.</span><span class="zh">费用记在你发送的 API Key 上，本服务不保存任何 Key。</span></li>
+  <li><span class="en">Rill keeps no response cache and no request or body logs. The host's own infrastructure may log traffic; use an endpoint you trust.</span><span class="zh">Rill 不缓存响应，不记录请求和正文；托管平台可能有自己的日志，请使用你信任的地址。</span></li>
+  <li><span class="en">Rill does not change who may use the API. Follow OpenAI's usage policies.</span><span class="zh">Rill 不改变 API 的使用资格，请遵守 OpenAI 的使用政策。</span></li>
+  <li><span class="en">Health check: <a href="/health"><code>/health</code></a> (checks this proxy, not OpenAI).</span><span class="zh">健康检查：<a href="/health"><code>/health</code></a>（检查本代理，不代表 OpenAI 状态）。</span></li>
+</ul>
+</main>
+
+<footer>
+  <span><span class="en">Run your own: Cloudflare Workers Free or a 3 MB binary.</span><span class="zh">自己部署：Cloudflare Workers 免费套餐或 3 MB 单文件程序。</span> <a href="https://github.com/yzfly/rill">github.com/yzfly/rill</a></span>
+  <span>MIT</span>
+</footer>
+</div>
+<script>
+(function(){
+  var root=document.documentElement, btn=document.getElementById('lang');
+  function set(l){root.lang=l;btn.textContent=l==='en'?'中文':'English';try{localStorage.setItem('rill-lang',l)}catch(e){}}
+  var saved=null;try{saved=localStorage.getItem('rill-lang')}catch(e){}
+  set(saved||((navigator.language||'').toLowerCase().indexOf('zh')===0?'zh-CN':'en'));
+  btn.onclick=function(){set(root.lang==='en'?'zh-CN':'en')};
+  document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x===t)});
+    document.querySelectorAll('[data-panel]').forEach(function(p){p.hidden=p.dataset.panel!==t.dataset.tab});
+  }});
+  function copy(text,el){
+    var done=function(){var o=el.innerHTML;el.textContent='✓';setTimeout(function(){el.innerHTML=o},1200)};
+    if(navigator.clipboard){navigator.clipboard.writeText(text).then(done,function(){})}
+  }
+  document.querySelectorAll('.copy').forEach(function(b){b.onclick=function(){
+    var text=b.dataset.copy||b.parentNode.querySelector('pre').innerText.replace(/\s+$/,'');
+    copy(text,b);
+  }});
+})();
+</script>
+</body>
+</html>
