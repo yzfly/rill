@@ -1,4 +1,8 @@
-use axum::{Router, body::Body, extract::State};
+use axum::{
+    Router,
+    body::{Body, HttpBody},
+    extract::State,
+};
 use http::{Request, Response, StatusCode};
 use rill_core::{Config, Decision, LocalResponse, local, prepare, response_headers_in_place};
 use std::time::Duration;
@@ -39,14 +43,20 @@ async fn proxy(State(state): State<Proxy>, request: Request<Body>) -> Response<B
         Decision::Forward { target, headers } => (target, headers),
     };
     let (parts, body) = request.into_parts();
-    let has_body = parts.method != http::Method::GET && parts.method != http::Method::HEAD;
+    // A known-empty body (no Content-Length / Transfer-Encoding) is not re-sent as
+    // an empty chunked stream; anything else streams through unchanged.
+    let has_body = parts.method != http::Method::GET
+        && parts.method != http::Method::HEAD
+        && body.size_hint().exact() != Some(0);
     let mut request = state.client.request(parts.method, target).headers(headers);
     if has_body {
         request = request.body(reqwest::Body::wrap_stream(body.into_data_stream()));
     }
     let upstream = match request.send().await {
         Ok(response) => response,
-        Err(_) => {
+        Err(error) => {
+            // Never log the URL query, headers or bodies; the error kind is enough.
+            eprintln!("rill: upstream request failed: {}", error.without_url());
             return immediate(local(
                 StatusCode::BAD_GATEWAY,
                 "{\"error\":{\"message\":\"Unable to reach upstream.\",\"type\":\"upstream_error\"}}",

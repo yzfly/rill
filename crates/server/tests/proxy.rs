@@ -200,3 +200,24 @@ async fn does_not_follow_redirects_with_the_api_key() {
         "http://127.0.0.1:1/never-contact"
     );
 }
+
+#[tokio::test]
+async fn bodyless_delete_is_not_sent_as_chunked() {
+    let upstream = spawn(Router::new().fallback(|request: Request<Body>| async move {
+        assert_eq!(request.method(), http::Method::DELETE);
+        assert!(!request.headers().contains_key("transfer-encoding"));
+        "{\"deleted\":true}"
+    }))
+    .await;
+    let gateway = proxy(&upstream.origin).await;
+    let response = reqwest::Client::new()
+        .delete(format!("{}/v1/files/file_1", gateway.origin))
+        .bearer_auth("test-key")
+        .header("upgrade", "h2c")
+        .header("connection", "Upgrade")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.text().await.unwrap(), "{\"deleted\":true}");
+}

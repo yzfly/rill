@@ -24,8 +24,9 @@ fn worker_headers(headers: &HeaderMap) -> Result<Headers> {
     for (name, value) in headers {
         result.append(
             name.as_str(),
-            value
-                .to_str()
+            // Values come from JS strings or ASCII literals, so UTF-8 is lossless here;
+            // HeaderValue::to_str would reject legitimate non-ASCII values.
+            std::str::from_utf8(value.as_bytes())
                 .map_err(|_| worker::Error::RustError("Invalid header value".into()))?,
         )?;
     }
