@@ -1,5 +1,10 @@
 # Rill
 
+[![Release](https://img.shields.io/github/v/release/yzfly/rill)](https://github.com/yzfly/rill/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Rust](https://img.shields.io/badge/Rust-2024-orange?logo=rust)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers_Free-F38020?logo=cloudflare&logoColor=white)
+
 **A self-hosted OpenAI API reverse proxy in Rust. Callers change one setting, the Base URL, and nothing else.**
 
 Rill puts the OpenAI API behind your own domain. Chat Completions, the Responses API, Embeddings, Decisions and every other `/v1/*` endpoint pass through unchanged, and streaming (SSE) arrives token by token. Callers keep their own API key and need no new SDK, plugin or local process. Deploy it on **Cloudflare Workers Free** or as a **single ~3 MiB binary**.
@@ -10,6 +15,19 @@ English · [简体中文](README.zh-CN.md)
 Your app / SDK / tool ──Base URL──▶ https://api.example.com/v1 (Rill) ──▶ https://api.openai.com/v1
                                      Cloudflare Workers · Linux binary · Docker
 ```
+
+## Quick start
+
+```bash
+# 1. Deploy (Cloudflare Workers Free, Node.js 22+, no Rust needed)
+curl -fL https://github.com/yzfly/rill/releases/download/v0.1.0/rill-worker.tar.gz | tar xz
+cd rill-worker && npx wrangler@4.156.0 login && npx wrangler@4.156.0 deploy
+
+# 2. Point any OpenAI client at it
+export OPENAI_BASE_URL=https://rill.<your-subdomain>.workers.dev/v1
+```
+
+That's it. Add a [custom domain](#deploy-on-cloudflare-workers-free-plan) to get a URL like `https://api.example.com/v1`, or run the [standalone server](#run-as-a-standalone-server) instead.
 
 ## Is this what you are looking for?
 
@@ -58,6 +76,16 @@ curl -N https://api.example.com/v1/responses \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{"model":"gpt-4.1-mini","input":"Say hello","stream":true}'
+```
+
+```bash
+# Decisions API: questions in, probabilities out
+curl https://api.example.com/v1/decisions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"gpt-6-luna","input":"The mug arrived cracked, I want my money back",
+       "questions":[{"type":"predicate","name":"refund_requested","instructions":"Does the customer ask for a refund?"}]}'
+# → {"answers":[{"type":"predicate","name":"refund_requested","probability":1.0}], ...}
 ```
 
 Any tool with an "OpenAI-compatible endpoint", "API Base" or "Base URL" field works the same way. Enter the URL **with** `/v1`.

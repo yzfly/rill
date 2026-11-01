@@ -1,5 +1,10 @@
 # Rill
 
+[![Release](https://img.shields.io/github/v/release/yzfly/rill)](https://github.com/yzfly/rill/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Rust](https://img.shields.io/badge/Rust-2024-orange?logo=rust)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers_Free-F38020?logo=cloudflare&logoColor=white)
+
 **用 Rust 写的自托管 OpenAI API 反向代理：调用端只改一个 Base URL，其他什么都不用动。**
 
 Rill 把 OpenAI API 接到你自己的域名上。Chat Completions、Responses API、Embeddings、Decisions 以及其他所有 `/v1/*` 接口原样透传，流式输出（SSE）逐 token 到达。调用端保留自己的 API Key，不用装 SDK、插件或本地服务。可部署在 **Cloudflare Workers 免费套餐**，也可以作为一个 **约 3 MiB 的单文件程序**运行。
@@ -10,6 +15,19 @@ Rill 把 OpenAI API 接到你自己的域名上。Chat Completions、Responses A
 你的应用 / SDK / 工具 ──Base URL──▶ https://api.example.com/v1（Rill）──▶ https://api.openai.com/v1
                                      Cloudflare Workers · Linux 程序 · Docker
 ```
+
+## 一分钟上手
+
+```bash
+# 1. 部署（Cloudflare Workers 免费套餐，只需 Node.js 22+，不用装 Rust）
+curl -fL https://github.com/yzfly/rill/releases/download/v0.1.0/rill-worker.tar.gz | tar xz
+cd rill-worker && npx wrangler@4.156.0 login && npx wrangler@4.156.0 deploy
+
+# 2. 任意 OpenAI 客户端改用这个地址
+export OPENAI_BASE_URL=https://rill.<你的子域>.workers.dev/v1
+```
+
+就这两步。想要 `https://api.example.com/v1` 这样的地址，[绑定自定义域名](#部署到-cloudflare-workers免费套餐)；也可以改用[普通服务器](#普通服务器--docker)部署。
 
 ## 你是不是在找这个？
 
@@ -58,6 +76,16 @@ curl -N https://api.example.com/v1/responses \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{"model":"gpt-4.1-mini","input":"你好","stream":true}'
+```
+
+```bash
+# Decisions 决策接口：题目进，概率出
+curl https://api.example.com/v1/decisions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"gpt-6-luna","input":"杯子收到就裂了，我要退钱",
+       "questions":[{"type":"predicate","name":"refund_requested","instructions":"用户是否要求退款？"}]}'
+# → {"answers":[{"type":"predicate","name":"refund_requested","probability":1.0}], ...}
 ```
 
 任何带有“OpenAI 兼容接口”“API Base”“Base URL”设置项的工具都一样使用。地址要**带上** `/v1`。
