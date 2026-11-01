@@ -76,7 +76,6 @@ Rill forwards every `/v1/*` path, method, query string and body byte unchanged. 
 | Error pass-through (4xx/5xx bodies, `x-request-id`, rate-limit headers) | any | ✅ Verified |
 | Legacy Completions, Images, Audio (speech, transcription uploads), Files, Uploads, Batch, Moderations, Vector Stores, Assistants, Fine-tuning | `/v1/...` | Forwarded as-is; not individually tested |
 | Realtime API over WebSocket | `/v1/realtime` | ❌ Not supported (HTTP/SSE only) |
-| Non-OpenAI paths, e.g. Volcengine Ark System One `/api/v1/systemone` | outside `/v1/` | ❌ Not forwarded: Rill only proxies an origin's `/v1/*` |
 
 The verified rows were run on 2026-11-01 against a Cloudflare Workers deployment using the official `openai` Python SDK 3.42.0 and curl. Only `OPENAI_BASE_URL` was changed.
 

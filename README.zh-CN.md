@@ -76,7 +76,6 @@ Rill 原样转发所有 `/v1/*` 的路径、方法、查询参数和请求体字
 | 错误透传（4xx/5xx 正文、`x-request-id`、限流头） | 全部 | ✅ 实测 |
 | 旧版 Completions、Images、Audio（语音合成、转写上传）、Files、Uploads、Batch、Moderations、Vector Stores、Assistants、Fine-tuning | `/v1/...` | 原样转发，未逐项实测 |
 | Realtime API（WebSocket） | `/v1/realtime` | ❌ 不支持（仅 HTTP / SSE） |
-| 非 OpenAI 路径，如火山方舟 System One `/api/v1/systemone` | `/v1/` 以外 | ❌ 不转发：Rill 只代理源站的 `/v1/*` |
 
 实测于 2026-11-01，经 Cloudflare Workers 部署，使用官方 `openai` Python SDK 3.42.0 和 curl，只设置了 `OPENAI_BASE_URL`。
 
