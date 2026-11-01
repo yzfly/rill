@@ -1,0 +1,21 @@
+[package]
+name = "rill-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Small streaming OpenAI API reverse proxy for servers and containers"
+
+[[bin]]
+name = "rill"
+path = "src/main.rs"
+
+[dependencies]
+rill-core.workspace = true
+http.workspace = true
+axum = { version = "0.8.9", default-features = false, features = ["http1", "http2", "tokio"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "stream", "http2"] }
+tokio = { version = "1.54", features = ["macros", "rt", "net", "signal", "time", "sync"] }
+
+[dev-dependencies]
+futures-util = "0.3"

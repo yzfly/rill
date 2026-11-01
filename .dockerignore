@@ -1,0 +1,8 @@
+.git
+target
+**/build
+**/.wrangler
+node_modules
+.env*
+.dev.vars*
+wrangler.production.toml

@@ -1,0 +1,25 @@
+[workspace]
+members = ["crates/core", "crates/server", "crates/worker"]
+default-members = ["crates/core", "crates/server"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/yzfly/rill"
+
+[workspace.dependencies]
+http = "1.5"
+url = "2.5"
+rill-core = { path = "crates/core" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = "s"
+
+# wasm-bindgen needs the target_features custom section in the final module.
+[profile.release.package.rill-worker]
+strip = "debuginfo"

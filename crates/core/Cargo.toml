@@ -1,0 +1,11 @@
+[package]
+name = "rill-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Shared routing and header policy for the Rill streaming API proxy"
+
+[dependencies]
+http.workspace = true
+url.workspace = true

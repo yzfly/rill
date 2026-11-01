@@ -1,0 +1,12 @@
+# Use a bundle already produced by worker-build (no custom build command).
+name = "rill"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-30"
+workers_dev = true
+
+[observability]
+enabled = false
+
+# [[routes]]
+# pattern = "api.example.com"
+# custom_domain = true

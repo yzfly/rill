@@ -1,0 +1,18 @@
+[package]
+name = "rill-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Rill on Cloudflare Workers, written in Rust and compiled to WebAssembly"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rill-core.workspace = true
+http.workspace = true
+worker = "0.8.7"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

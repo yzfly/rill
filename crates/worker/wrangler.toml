@@ -1,0 +1,19 @@
+name = "rill"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-30"
+workers_dev = true
+
+[build]
+command = "worker-build --release"
+
+[observability]
+enabled = false
+
+# RILL_UPSTREAM is an origin, without /v1. Defaults to https://api.openai.com.
+# [vars]
+# RILL_UPSTREAM = "https://api.openai.com"
+
+# Add your own custom domain after onboarding it to Cloudflare:
+# [[routes]]
+# pattern = "api.example.com"
+# custom_domain = true

@@ -1,0 +1,11 @@
+/target/
+**/build/
+**/.wrangler/
+node_modules/
+.env
+.env.*
+!.env.example
+.dev.vars*
+wrangler.production.toml
+*.log
+.DS_Store
