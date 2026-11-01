@@ -102,6 +102,21 @@ docker compose up --build -d
 
 相同 Dockerfile 可作为 Fly.io、Railway、Render 等容器平台的部署入口；首版提供 Docker 配置，但尚未在 Docker 中构建运行，也未逐一验证这些平台。构建、配置、测试和限制见 [完整文档](README.md)。
 
+## 长期部署选择
+
+服务器版是普通 HTTP 服务，不依赖 Cloudflare。阿里云、腾讯云等 Linux 云主机可以直接运行原生程序，用 systemd 或 Docker 的重启策略维持服务；云函数平台则可能需要专门的入口适配。
+
+| 选择 | 运行方式与限制 |
+| --- | --- |
+| Cloudflare Workers Free | 已验证，优先选择；使用专门的 WASM 构建包，受免费配额限制。 |
+| 自有 Linux / VPS | 已验证原生程序；单文件运行，TLS 可交给现有反向代理。服务器和流量按原套餐计费。 |
+| [Google Cloud Run](https://cloud.google.com/run/pricing) | 可部署容器，每月有持续免费额度；需要结算账号，超额、出站流量和镜像存储等可能收费。请求默认 5 分钟，最长可配置到 [60 分钟](https://docs.cloud.google.com/run/docs/configuring/request-timeout)。 |
+| [Azure Container Apps](https://azure.microsoft.com/en-us/pricing/details/container-apps/) | Consumption 套餐每月有免费请求与计算额度，超额付费；默认 HTTP 入口有 [240 秒超时](https://learn.microsoft.com/en-us/azure/container-apps/ingress-overview)。 |
+| [Oracle Always Free VM](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) | 可运行服务器版，但受容量限制，闲置免费实例可能被回收；ARM 机器需要重新构建，不能使用 x86_64 下载包。 |
+| [Render Free](https://render.com/docs/free) | 可部署容器；15 分钟无请求会休眠，唤醒约需 1 分钟，不适合作为要求稳定响应的默认入口。 |
+
+后三种容器平台和 Oracle 尚未逐平台部署验证。容器默认监听 `0.0.0.0:8787`，平台提供 `PORT` 时使用平台端口；健康检查路径为 `/health`。选择能访问上游的部署地区，并实际验证 SSE。容器平台按资源分配时间计费，长时间等待模型也可能消耗免费计算额度。
+
 ## 资源占用
 
 0.1.0 在 Linux x86_64 上的测量：程序约 **3.35 MiB**，空闲 RSS 约 **3.9 MiB**；4 路并发转发各 8 MiB 的本地 HTTP 数据时，RSS 峰值约 **4.9 MiB**。使用单线程异步运行时，实际占用随 TLS、并发和平台变化，这组数据不代表容量保证。

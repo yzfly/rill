@@ -135,6 +135,21 @@ The Dockerfile configures a non-root user. Compose binds to loopback so an exist
 
 `RILL_UPSTREAM` must be an HTTP(S) **origin**, without credentials, `/v1`, query or fragment. Set it only to an upstream you trust with the caller's API key. HTTP is useful for local integration tests; use HTTPS for remote upstreams.
 
+### Long-term hosting options
+
+The native server is an ordinary HTTP service with no Cloudflare dependency. Run it on a Linux VM from any provider, using systemd or Docker's restart policy for process supervision. Cloud-function products may need a platform-specific adapter.
+
+| Platform | Deployment and limits |
+| --- | --- |
+| Cloudflare Workers Free | Verified with the WASM build; the simplest default within its free quotas. |
+| Your Linux server / VPS | Native executable verified; use your existing HTTPS reverse proxy. Server and bandwidth costs follow your provider's plan. |
+| [Google Cloud Run](https://cloud.google.com/run/pricing) | Container option with recurring free quotas; billing account required, and excess usage, egress and image storage can cost extra. Requests default to 5 minutes, configurable up to [60 minutes](https://docs.cloud.google.com/run/docs/configuring/request-timeout). |
+| [Azure Container Apps](https://azure.microsoft.com/en-us/pricing/details/container-apps/) | Consumption offers recurring free compute/request allowances; excess usage is billed. Standard HTTP ingress has a [240-second timeout](https://learn.microsoft.com/en-us/azure/container-apps/ingress-overview). |
+| [Oracle Always Free VM](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) | Server option, subject to available capacity and possible idle-instance reclamation. ARM instances require a matching build; the supplied binary is x86_64. |
+| [Render Free](https://render.com/docs/free) | Container option; sleeps after 15 idle minutes and can take about a minute to wake. Better for experiments than a consistently responsive endpoint. |
+
+Cloud Run, Container Apps, Oracle and Render have not been deployed and tested individually for this release. Containers default to `0.0.0.0:8787` and honor a platform-provided `PORT`; use `/health` for health checks. Pick a region that can reach your upstream and verify SSE. Container platforms meter allocated resource time, so long-running model requests can consume free compute allowances while waiting.
+
 ## Development
 
 ```bash

@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/rill /usr/local/bin/rill
 USER 65532:65532
-ENV RILL_LISTEN=0.0.0.0:8787
+ENV PORT=8787
 EXPOSE 8787
 ENTRYPOINT ["/usr/local/bin/rill"]
