@@ -2,7 +2,7 @@
 
 **用 Rust 写的自托管 OpenAI API 反向代理：调用端只改一个 Base URL，其他什么都不用动。**
 
-Rill 把 OpenAI API 接到你自己的域名上。Chat Completions、Responses API、Embeddings 以及其他所有 `/v1/*` 接口原样透传，流式输出（SSE）逐 token 到达。调用端保留自己的 API Key，不用装 SDK、插件或本地服务。可部署在 **Cloudflare Workers 免费套餐**，也可以作为一个 **约 3 MiB 的单文件程序**运行。
+Rill 把 OpenAI API 接到你自己的域名上。Chat Completions、Responses API、Embeddings、Decisions 以及其他所有 `/v1/*` 接口原样透传，流式输出（SSE）逐 token 到达。调用端保留自己的 API Key，不用装 SDK、插件或本地服务。可部署在 **Cloudflare Workers 免费套餐**，也可以作为一个 **约 3 MiB 的单文件程序**运行。
 
 [English](README.md) · 简体中文
 
@@ -71,10 +71,12 @@ Rill 原样转发所有 `/v1/*` 的路径、方法、查询参数和请求体字
 | Chat Completions（含 `stream: true`） | `/v1/chat/completions` | ✅ 真实 Key 实测，普通与 SSE |
 | Responses API（含流式事件） | `/v1/responses`、`/v1/responses/{id}` | ✅ 真实 Key 实测，普通与 SSE |
 | Embeddings 向量 | `/v1/embeddings` | ✅ 真实 Key 实测 |
+| Decisions 决策（`gpt-6-luna`：是非 / 选择 / 打分题） | `/v1/decisions` | ✅ 真实 Key 实测 |
 | 模型列表 | `/v1/models` | ✅ 真实 Key 实测 |
 | 错误透传（4xx/5xx 正文、`x-request-id`、限流头） | 全部 | ✅ 实测 |
 | 旧版 Completions、Images、Audio（语音合成、转写上传）、Files、Uploads、Batch、Moderations、Vector Stores、Assistants、Fine-tuning | `/v1/...` | 原样转发，未逐项实测 |
 | Realtime API（WebSocket） | `/v1/realtime` | ❌ 不支持（仅 HTTP / SSE） |
+| 非 OpenAI 路径，如火山方舟 System One `/api/v1/systemone` | `/v1/` 以外 | ❌ 不转发：Rill 只代理源站的 `/v1/*` |
 
 实测于 2026-11-01，经 Cloudflare Workers 部署，使用官方 `openai` Python SDK 3.42.0 和 curl，只设置了 `OPENAI_BASE_URL`。
 
